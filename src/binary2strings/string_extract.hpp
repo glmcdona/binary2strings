@@ -172,7 +172,7 @@ enum STRING_TYPE
 {
 	TYPE_UNDETERMINED,
 	TYPE_UTF8,
-	TYPE_UNICODE_WCHAR
+	TYPE_WIDE_STRING
 };
 
 class extracted_string
@@ -231,9 +231,9 @@ public:
 		{
 			return "UTF8";
 		}
-		else if (m_type == TYPE_UNICODE_WCHAR)
+		else if (m_type == TYPE_WIDE_STRING)
 		{
-			return "UNICODE";
+			return "WIDE_STRING";
 		}
 		else
 		{
@@ -282,6 +282,15 @@ size_t try_utf_char_len( const unsigned char* buffer, size_t buffer_size, long o
 		if( (buffer[offset + 1] & 0xC0) != 0x80 )
 			return 0;
 		
+		// Now convert the character to wchar_t
+		wchar_t c = 0;
+		c |= (first_byte & 0x1F) << 6;
+		c |= (buffer[offset + 1] & 0x3F);
+
+		// Require the character to be seen at least once in commoncrawl web scape
+		if( is_seen_commoncrawl.find(c) == is_seen_commoncrawl.end() )
+			return 0; // Invalid unicode character
+
 		return 2;
 	}
 
@@ -296,6 +305,16 @@ size_t try_utf_char_len( const unsigned char* buffer, size_t buffer_size, long o
 		
 		if( (buffer[offset + 2] & 0xC0) != 0x80 )
 			return 0;
+		
+		// Now convert the character to wchar_t
+		wchar_t c = 0;
+		c |= (first_byte & 0x0F) << 12;
+		c |= (buffer[offset + 1] & 0x3F) << 6;
+		c |= (buffer[offset + 2] & 0x3F);
+
+		// Require the character to be seen at least once in commoncrawl web scape
+		if( is_seen_commoncrawl.find(c) == is_seen_commoncrawl.end() )
+			return 0; // Invalid unicode character
 		
 		return 3;
 	}
@@ -315,6 +334,17 @@ size_t try_utf_char_len( const unsigned char* buffer, size_t buffer_size, long o
 		if( (buffer[offset + 3] & 0xC0) != 0x80 )
 			return 0;
 		
+		// Now convert the character to wchar_t
+		wchar_t c = 0;
+		c |= (first_byte & 0x07) << 18;
+		c |= (buffer[offset + 1] & 0x3F) << 12;
+		c |= (buffer[offset + 2] & 0x3F) << 6;
+		c |= (buffer[offset + 3] & 0x3F);
+
+		// Require the character to be seen at least once in commoncrawl web scape
+		if( is_seen_commoncrawl.find(c) == is_seen_commoncrawl.end() )
+			return 0; // Invalid unicode character
+		
 		return 4;
 	}
 
@@ -328,7 +358,7 @@ int get_language_group( wchar_t c )
 	return bmp_12bits_to_group[c >> 4]; // Leading 12 bits identify the language group
 }
 
-extracted_string* try_extract_string( const unsigned char* buffer, size_t buffer_size, long offset, size_t min_string_length )
+extracted_string* try_extract_string( const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars )
 {
 	// Try extracting the string as either utf8 or unicode wchar format. Returns None if it's not a valid string.
 	int i;
@@ -351,7 +381,7 @@ extracted_string* try_extract_string( const unsigned char* buffer, size_t buffer
 			utf_char_len = try_utf_char_len( buffer, buffer_size, i );
 		}
 
-		if( char_count >= min_string_length )
+		if( char_count >= min_chars )
 		{
 			// Return the extracted string
 			return new extracted_string( (char*) (buffer + offset), i - offset, TYPE_UTF8, offset, i-1 );
@@ -408,28 +438,42 @@ extracted_string* try_extract_string( const unsigned char* buffer, size_t buffer
 		char_count++;
 	}
 
-	if( char_count >= min_string_length )
+	if( char_count >= min_chars )
 	{
 		// Return the extracted string
-		return new extracted_string( (wchar_t*) (buffer + offset), i - offset, TYPE_UNICODE_WCHAR, offset, i-2 );
+		return new extracted_string( (wchar_t*) (buffer + offset), i - offset, TYPE_WIDE_STRING, offset, i-2 );
 	}
 
 	return NULL; // Invalid string at this offset
 }
 
 
-//vector<std::tuple<string, string>> extract_all_strings( const unsigned char buffer[], size_t buffer_size, size_t min_string_length )
-vector<std::tuple<string, string, std::pair<int,int>>> extract_all_strings( const unsigned char buffer[], size_t buffer_size, size_t min_string_length )
+std::tuple<string, string, std::pair<int,int>> try_extract_string_tuple( const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars )
+{
+	// Simple wrapper to return a tuple instead
+	extracted_string* s = try_extract_string( buffer, buffer_size, offset, min_chars );
+	if( s == NULL )
+		return std::make_tuple( "", "", std::make_pair(0,0) );
+	else
+		return std::make_tuple(
+			s->get_string(),
+			s->get_type_string(),
+			std::pair<int,int>(s->get_offset_start(), s->get_offset_end())
+		);
+}
+
+
+vector<std::tuple<string, string, std::pair<int,int>>> extract_all_strings( const unsigned char buffer[], size_t buffer_size, size_t min_chars )
 {
 	// Process the specified binary buffer and extract all strings
 	long offset = 0;
 	vector<std::tuple<string, string, std::pair<int,int>>> r_vect;
 	extracted_string* s;
 	
-	while( offset + min_string_length < buffer_size )
+	while( offset + min_chars < buffer_size )
 	{
 		// Process this offset
-		s = try_extract_string( (unsigned char*) buffer, buffer_size, offset, min_string_length );
+		s = try_extract_string( (unsigned char*) buffer, buffer_size, offset, min_chars );
 
 		if ( s )
 		{
@@ -442,6 +486,9 @@ vector<std::tuple<string, string, std::pair<int,int>>> extract_all_strings( cons
 
 			// Advance by the byte-length of the string
 			offset += s->m_size_in_bytes;
+			
+			// Cleanup
+			//delete s;
 		}else{
 			// Advance the offset by 1
 			offset += 1;
