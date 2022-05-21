@@ -257,7 +257,7 @@ public:
 	}
 };
 
-size_t try_utf_char_len( const unsigned char* buffer, size_t buffer_size, long offset )
+size_t try_utf8_char_step( const unsigned char* buffer, size_t buffer_size, long offset )
 {
 	// Returns 0 if it's not likely a valid utf8 character. For ascii range of characters it requires
 	// the character to be a displayable character.
@@ -272,6 +272,9 @@ size_t try_utf_char_len( const unsigned char* buffer, size_t buffer_size, long o
 			return 1;
 		return 0;
 	}
+
+	if( first_byte < 0xC2 )
+		return 0; // UTF* should never be between 0x80 and 0xC2
 
 	if( first_byte < 0xE0 )
 	{
@@ -366,7 +369,7 @@ extracted_string* try_extract_string( const unsigned char* buffer, size_t buffer
 	
 	// Try to parse as utf8 first
 	size_t utf_char_len;
-	utf_char_len = try_utf_char_len( buffer, buffer_size, offset );
+	utf_char_len = try_utf8_char_step( buffer, buffer_size, offset );
 
 	if( utf_char_len >= 0 )
 	{
@@ -378,7 +381,7 @@ extracted_string* try_extract_string( const unsigned char* buffer, size_t buffer
 			char_count++;
 
 			// Try parse next character
-			utf_char_len = try_utf_char_len( buffer, buffer_size, i );
+			utf_char_len = try_utf8_char_step( buffer, buffer_size, i );
 		}
 
 		if( char_count >= min_chars )
@@ -483,12 +486,12 @@ vector<std::tuple<string, string, std::pair<int,int>>> extract_all_strings( cons
 					std::pair<int,int>(s->get_offset_start(), s->get_offset_end())
 				)
 			);
-
+			
 			// Advance by the byte-length of the string
-			offset += s->m_size_in_bytes;
+			offset += (long) s->m_size_in_bytes;
 			
 			// Cleanup
-			//delete s;
+			delete s;
 		}else{
 			// Advance the offset by 1
 			offset += 1;
