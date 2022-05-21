@@ -274,7 +274,10 @@ size_t try_utf8_char_step( const unsigned char* buffer, size_t buffer_size, long
 	}
 
 	if( first_byte < 0xC2 )
-		return 0; // UTF* should never be between 0x80 and 0xC2
+		return 0; // Ignore continuation bytes, they are non displayable.
+
+	if( first_byte > 0xF4 )
+		return 0; // Invalid bytes for Utf8, https://en.wikipedia.org/wiki/UTF-8#Invalid_byte_sequences
 
 	if( first_byte < 0xE0 )
 	{
@@ -296,7 +299,7 @@ size_t try_utf8_char_step( const unsigned char* buffer, size_t buffer_size, long
 
 		return 2;
 	}
-
+	
 	if( first_byte < 0xF0 )
 	{
 		// 3 byte encoding
@@ -315,41 +318,28 @@ size_t try_utf8_char_step( const unsigned char* buffer, size_t buffer_size, long
 		c |= (buffer[offset + 1] & 0x3F) << 6;
 		c |= (buffer[offset + 2] & 0x3F);
 
+		// Check special cases
+		if( first_byte == 0xE0 )
+		{
+			// Check for overlong case
+			if( c < 0x800 ) 
+				return 0; // Overlong
+		}
+		else if( first_byte == 0xED )
+		{
+			// Check for surrogate pair case
+			if( c >= 0xD800 && c <= 0xDFFF )
+				return 0;
+		}
+
 		// Require the character to be seen at least once in commoncrawl web scape
 		if( is_seen_commoncrawl.find(c) == is_seen_commoncrawl.end() )
 			return 0; // Invalid unicode character
 		
 		return 3;
 	}
-
-	if( first_byte < 0xF8 )
-	{
-		// 4 byte encoding
-		if( buffer_size < offset + 4 )
-			return 0;
-		
-		if( (buffer[offset + 1] & 0xC0) != 0x80 )
-			return 0;
-		
-		if( (buffer[offset + 2] & 0xC0) != 0x80 )
-			return 0;
-		
-		if( (buffer[offset + 3] & 0xC0) != 0x80 )
-			return 0;
-		
-		// Now convert the character to wchar_t
-		wchar_t c = 0;
-		c |= (first_byte & 0x07) << 18;
-		c |= (buffer[offset + 1] & 0x3F) << 12;
-		c |= (buffer[offset + 2] & 0x3F) << 6;
-		c |= (buffer[offset + 3] & 0x3F);
-
-		// Require the character to be seen at least once in commoncrawl web scape
-		if( is_seen_commoncrawl.find(c) == is_seen_commoncrawl.end() )
-			return 0; // Invalid unicode character
-		
-		return 4;
-	}
+	
+	// 4 byte encoding is out of scope, since it is outside the Basic Multilingual Plane.
 
 	return 0;
 }
@@ -486,7 +476,7 @@ vector<std::tuple<string, string, std::pair<int,int>>> extract_all_strings( cons
 					std::pair<int,int>(s->get_offset_start(), s->get_offset_end())
 				)
 			);
-			
+
 			// Advance by the byte-length of the string
 			offset += (long) s->m_size_in_bytes;
 			
