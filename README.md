@@ -2,8 +2,8 @@
 Work-in-progress python module to extract Ascii, Utf8, and wide strings from binary data. Supports Unicode characters. Fast wrapper around c++ compiled code.
 
 Supported string formats:
-* Utf8
-* Wide-character strings
+* Utf8 (8-bit Unicode variable length characters)
+* Wide-character strings (UCS-2 Unicode fixed 16-bit characters)
 
 International language string extraction is supported for both Utf8 and wide-character string standards.
 
