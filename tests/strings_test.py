@@ -72,17 +72,25 @@ class MainTest(unittest.TestCase):
         self.assertEqual(result[0][0], "世界您好")
         self.assertEqual(result[1][0], "Привет, мир")
 
-    def test_binary(self):
-        # Test that a transition between two languages aborts for a WIDE_STRING
-        with open("C:\\Windows\\System32\\cmd.exe", "rb") as f:
-            data = f.read()
-        result = binary2strings.extract_all_strings(data)
-        print(len(result))
-        print(result)
-        #self.assertEqual(len(result), 2)
-        #self.assertEqual(result[0][0], "世界您好")
-        #self.assertEqual(result[1][0], "Привет, мир")
+    def test_utf8_three_byte_decoding(self):
+        # Test extraction of three byte character utf8
+        data = b"\xe0\xa4\xb9\xe0\xa4\xb9\xe0\xa4\xb9\xe0\xa4\xb9"
+        result = binary2strings.extract_string(data, min_chars=2)
+        self.assertEqual(result[0], "हहहह")
 
+        data = b"\xe2\x82\xac\xe2\x82\xac\xe2\x82\xac\xe2\x82\xac"
+        result = binary2strings.extract_string(data, min_chars=2)
+        self.assertEqual(result[0], "€€€€")
+
+        data = b"\xed\x95\x9c\xed\x95\x9c\xed\x95\x9c\xed\x95\x9c"
+        result = binary2strings.extract_string(data, min_chars=2)
+        self.assertEqual(result[0], "한한한한")
+
+    def test_utf8_three_byte_overlong(self):
+        # Test extraction of three byte character utf8
+        data = b"\xe0\x81\x81\xe0\x81\x81\xe0\x81\x81\xe0\x81\x81" # "AAAA" in overlong format
+        result = binary2strings.extract_string(data, min_chars=2)
+        self.assertEqual(result[0], "")
 
 
 if __name__ == '__main__':
