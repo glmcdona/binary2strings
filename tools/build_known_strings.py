@@ -1,40 +1,118 @@
+from genericpath import isfile
 from os import walk
 from binary2strings import binary2strings
+import json
+import random
 
-# This script is used to generate the known_strings.h file.
-paths = [
-    "C:\\Windows\\",
-    "C:\\Program Files\\",
-    "C:\\Program Files (x86)\\",
-    "C:\\ProgramData\\",
-]
+def build_string_counts(paths, sampling_per_group=1000):
+    filenames_processed = {} # Only count files once
+    strings_db = {}
 
-filenames_processed = {} # Only count files once
-strings_db = {}
+    for path in paths:
+        # Iterate directory
+        files = []
+        for (dir_path, dir_names, file_names) in walk(path):
+            for file in file_names:
+                # Only process each filename once to better represent how common strings are
+                if file not in filenames_processed:
+                    files.append(dir_path + "\\" + file)
+                    filenames_processed[file] = True
+        files = random.sample(files, min(sampling_per_group, len(files)))
 
-for path in paths:
-    # Iterate directory
-    for (dir_path, dir_names, file_names) in walk(path):
-        for file in file_names:
-            # Only process each filename once to better represent how common strings are
-            if file not in filenames_processed:
+        print(f"Processing {len(files)} files in {path}...")
 
-                # Process this file
-                print(dir_path + "\\" + file)
-                try:
-                    with open(dir_path + "\\" + file, "rb") as f:
-                        data = f.read()
-                except:
-                    continue # Lacking permissions usually
-                
-                result = binary2strings.extract_all_strings(data)
-                filenames_processed[file] = True
+        for i, file in enumerate(files):
+            # Process this file
+            try:
+                with open(file, "rb") as f:
+                    data = f.read()
+            except:
+                continue # Lacking permissions usually
+            
+            result = binary2strings.extract_all_strings(data)
 
-                # Add to database
-                for (string, type, span) in result:
-                    if string in strings_db:
-                        strings_db[string] += 1
-                    else:
-                        strings_db[string] = 1
+            # Set of strings already added for this file
+            strings_processed_this_file = {}
 
-                print("Processed " + dir_path + "\\" + file + " (" + str(len(result)) + " strings)")
+            # Must contain at least 10 strings, mostly a filter to exclude all-string files
+            if len(result) >= 10:
+                for (string, type, span, is_interesting) in result:
+                    # Maximum size for strings
+                    if len(string) < 4000:
+                        # Only count a string once from a single file
+                        if string not in strings_processed_this_file:
+                            strings_processed_this_file[string] = True
+
+                            if string in strings_db:
+                                strings_db[string] += 1
+                            else:
+                                strings_db[string] = 1
+
+            print(f"progress={i} of {len(files)}, total_strings={len(strings_db)}, strings_in_file={len(result)}, {file}")
+    
+    return strings_db
+
+
+if __name__ == '__main__':
+    # This script is used to generate the known_strings.h file.
+    paths = [
+        "C:\\Windows\\",
+        "C:\\Program Files\\",
+        "C:\\Program Files (x86)\\",
+        "C:\\ProgramData\\",
+    ]
+
+    # Create or load the string frequency database
+    if isfile("strings_db.json"):
+        with open("strings_db.json", "r") as f:
+            strings_db = json.load(f)
+        print(f"Loaded {len(strings_db)} strings from strings_db.json")
+
+    else:
+        strings_db = build_string_counts(paths, sampling_per_group=10000)
+
+        # Write the strings db to a json file
+        with open("strings_db.json", "w") as f:
+            json.dump(strings_db, f)
+        print(f"Wrote {len(strings_db)} strings to known_strings.json")
+
+    # Build a list of strings with a minimum frequency of 10
+    strings_selected = {}
+    for string in strings_db.keys():
+        if ( len(string) <= 8 and strings_db[string] >= 7 ) or strings_db[string] >= 60:
+            # Hash over utf8 encoding of the string
+            #print(string)
+            data = bytes(string, 'utf-8')
+            crc64 = binary2strings._crc64(0, data)
+
+            if crc64 not in strings_selected:
+                strings_selected[crc64] = True
+
+    # Create sorted list
+    strings_selected = list(strings_selected.keys())
+    strings_selected.sort()
+    
+    print(f"Selected strings {len(strings_db)} --> {len(strings_selected)}.")
+
+    # Write the strings to a header file
+    with open("known_strings.h", "w") as f:
+        f.write("#pragma once\n")
+        f.write("#include <unordered_set>\n")
+        f.write("\n")
+        f.write("namespace known_strings {\n")
+        f.write("\n")
+        f.write("\t// This file is generated by build_known_strings.py\n")
+        f.write(f"\t// Total strings: {len(strings_selected)}\n")
+        f.write("\tstatic std::unordered_set<uint64_t> common_string_crc64s = {\n\t\t")
+
+        for i, crc64 in enumerate(strings_selected):
+            f.write("0x%016x," % crc64)
+            if i % 16 == 15:
+                f.write("\n\t\t")
+        
+        f.write("\n\t};\n")
+        f.write("};\n")
+        f.write("\n")
+
+
+        print("Wrote known_strings.h")

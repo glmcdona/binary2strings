@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# String frequence database
+strings_db.json
+
 # C extensions
 *.so
 
