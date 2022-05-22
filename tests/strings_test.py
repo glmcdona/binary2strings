@@ -63,9 +63,9 @@ class MainTest(unittest.TestCase):
         # Note: Utf16 is a WIDE_STRING if characters are in basic multilingual plane
         self.assertEqual(result[0][1], "WIDE_STRING")
 
-    def test_language_transition(self):
+    def test_two_languages(self):
         # Test that a transition between two languages aborts for a WIDE_STRING
-        string = "\x0f世界您好Привет, мир\x0f"
+        string = "\x0f世界您好\x00Привет, мир\x0f"
         data = bytes(string, 'utf_16')
         result = binary2strings.extract_all_strings(data)
         self.assertEqual(len(result), 2)
@@ -91,6 +91,49 @@ class MainTest(unittest.TestCase):
         data = b"\xe0\x81\x81\xe0\x81\x81\xe0\x81\x81\xe0\x81\x81" # "AAAA" in overlong format
         result = binary2strings.extract_string(data, min_chars=2)
         self.assertEqual(result[0], "")
+
+    def test_crc64(self):
+        data = b"123456789"
+        result = binary2strings._crc64(crc=0, buffer=data)
+        self.assertEqual(result, 0xe9c6d914c4b8d9ca)
+
+    def test_is_uncommon(self):
+        common_strings = ["errors","DllGetActivationFactory","开损牵敲","NtOpenFile",".tlb"]
+        uncommon_strings = ["jibbersih123","a12F","掃掃掃掃掃","NtOpenFileNot",".B8R"]
+
+        # Test common strings
+        for string in common_strings:
+            data = bytes(string, 'utf-8')
+            result = binary2strings.extract_all_strings(data)
+            self.assertEqual(len(result), 1, str(result) + " - " + string)
+            self.assertEqual(result[0][3], False, str(result) + " - " + string)
+
+            data = bytes(string, 'utf-16')
+            result = binary2strings.extract_all_strings(data)
+            self.assertEqual(len(result), 1, str(result) + " - " + string)
+            self.assertEqual(result[0][3], False, str(result) + " - " + string)
+        
+        # Test uncommon strings
+        for string in uncommon_strings:
+            data = bytes(string, 'utf-8')
+            result = binary2strings.extract_all_strings(data)
+            self.assertEqual(len(result), 1, str(result) + " - " + string)
+            self.assertEqual(result[0][3], True, str(result) + " - " + string)
+
+            data = bytes(string, 'utf-16')
+            result = binary2strings.extract_all_strings(data)
+            self.assertEqual(len(result), 1, str(result) + " - " + string)
+            self.assertEqual(result[0][3], True, str(result) + " - " + string)
+
+        # Test only returning uncommon strings
+        string = "\x00".join(common_strings + uncommon_strings)
+        data = bytes(string, 'utf-8')
+        result = binary2strings.extract_all_strings(data, only_uncommon=True)
+        self.assertEqual(len(result), len(uncommon_strings))
+        for i in range(len(uncommon_strings)):
+            self.assertEqual(result[i][0], uncommon_strings[i])
+            self.assertEqual(result[i][3], True)
+
 
 
 if __name__ == '__main__':
