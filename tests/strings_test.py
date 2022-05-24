@@ -97,12 +97,12 @@ class MainTest(unittest.TestCase):
         result = binary2strings._crc64(crc=0, buffer=data)
         self.assertEqual(result, 0xe9c6d914c4b8d9ca)
 
-    def test_is_uncommon(self):
-        common_strings = ["errors","DllGetActivationFactory","开损牵敲","NtOpenFile",".tlb"]
-        uncommon_strings = ["jibbersih123","a12F","掃掃掃掃掃","NtOpenFileNot",".B8R"]
+    def test_is_interesting(self):
+        interesting_strings = ["error","DllGetActivationFactory","NtOpenFile","magic_number"]
+        not_interesting_strings = ["xQVV","|$ UATAUAVAWH","XXX8Pvh8v"]
 
-        # Test common strings
-        for string in common_strings:
+        # Test not interesting strings
+        for string in not_interesting_strings:
             data = bytes(string, 'utf-8')
             result = binary2strings.extract_all_strings(data)
             self.assertEqual(len(result), 1, str(result) + " - " + string)
@@ -113,8 +113,8 @@ class MainTest(unittest.TestCase):
             self.assertEqual(len(result), 1, str(result) + " - " + string)
             self.assertEqual(result[0][3], False, str(result) + " - " + string)
         
-        # Test uncommon strings
-        for string in uncommon_strings:
+        # Test interesting strings
+        for string in interesting_strings:
             data = bytes(string, 'utf-8')
             result = binary2strings.extract_all_strings(data)
             self.assertEqual(len(result), 1, str(result) + " - " + string)
@@ -125,13 +125,13 @@ class MainTest(unittest.TestCase):
             self.assertEqual(len(result), 1, str(result) + " - " + string)
             self.assertEqual(result[0][3], True, str(result) + " - " + string)
 
-        # Test only returning uncommon strings
-        string = "\x00".join(common_strings + uncommon_strings)
+        # Test only returning interesting strings
+        string = "\x00".join(interesting_strings + not_interesting_strings)
         data = bytes(string, 'utf-8')
-        result = binary2strings.extract_all_strings(data, only_uncommon=True)
-        self.assertEqual(len(result), len(uncommon_strings))
-        for i in range(len(uncommon_strings)):
-            self.assertEqual(result[i][0], uncommon_strings[i])
+        result = binary2strings.extract_all_strings(data, only_interesting=True)
+        self.assertEqual(len(result), len(interesting_strings))
+        for i in range(len(interesting_strings)):
+            self.assertEqual(result[i][0], interesting_strings[i])
             self.assertEqual(result[i][3], True)
 
 

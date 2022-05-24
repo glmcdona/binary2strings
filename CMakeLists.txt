@@ -4,7 +4,7 @@ project(binary2strings)
 set(SOURCE_DIR "src/binary2strings")
 # Tell CMake that headers are also in SOURCE_DIR
 include_directories(${SOURCE_DIR})
-set(SOURCES "${SOURCE_DIR}/string_extract.hpp" "${SOURCE_DIR}/crc64.hpp")
+set(SOURCES "${SOURCE_DIR}/binary2strings.hpp")
 # Generate Python module
 add_subdirectory(lib/pybind11)
 pybind11_add_module(binary2strings ${SOURCES} "${SOURCE_DIR}/bindings.cpp")
