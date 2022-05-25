@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 #include <vector>
-#include <windows.h>
 #include "extracted_string.hpp"
 
 using namespace std;

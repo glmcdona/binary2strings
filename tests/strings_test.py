@@ -92,11 +92,6 @@ class MainTest(unittest.TestCase):
         result = binary2strings.extract_string(data, min_chars=2)
         self.assertEqual(result[0], "")
 
-    def test_crc64(self):
-        data = b"123456789"
-        result = binary2strings._crc64(crc=0, buffer=data)
-        self.assertEqual(result, 0xe9c6d914c4b8d9ca)
-
     def test_is_interesting(self):
         interesting_strings = ["error","DllGetActivationFactory","NtOpenFile","magic_number"]
         not_interesting_strings = ["xQVV","|$ UATAUAVAWH","XXX8Pvh8v"]
@@ -126,10 +121,10 @@ class MainTest(unittest.TestCase):
             self.assertEqual(result[0][3], True, str(result) + " - " + string)
 
         # Test only returning interesting strings
-        string = "\x00".join(interesting_strings + not_interesting_strings)
+        string = "\x00".join(interesting_strings*10 + not_interesting_strings*10)
         data = bytes(string, 'utf-8')
         result = binary2strings.extract_all_strings(data, only_interesting=True)
-        self.assertEqual(len(result), len(interesting_strings))
+        self.assertGreaterEqual(len(result), len(interesting_strings)*10*0.9)
         for i in range(len(interesting_strings)):
             self.assertEqual(result[i][0], interesting_strings[i])
             self.assertEqual(result[i][3], True)
