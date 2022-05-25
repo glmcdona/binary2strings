@@ -1,5 +1,4 @@
-#! /usr/bin/env python3
-
+#! /usr/bin/0env python3
 import os
 import re
 import sys
@@ -93,13 +92,22 @@ class CMakeBuild(build_ext):
         copyfile(src_file, dest_file)
         copymode(src_file, dest_file)
 
+
+# Note to self to build and upload skip existing:
+#   python setup.py sdist bdist_wheel
+#   twine upload dist/* --skip-existing
+with open("readme.md", "r") as fh:
+    long_description = fh.read()
 setup(
     name='binary2strings',
-    version='0.1',
+    version='0.1.4',
     author='Geoff McDonald',
     author_email='glmcdona@gmail.com',
-    description='Lightning fast string extraction from binary buffers.',
-    long_description='Lightning fast string extraction from binary buffers. This supports multi-lingual string extration in UTF8 and Unicode. Written in C++ to be fast.',
+    url='https://github.com/glmcdona/binary2strings',
+    license='MIT',
+    description='Fast string extraction from binary buffers.',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     packages=find_packages('src'),
     package_dir={'':'src'},
     ext_modules=[CMakeExtension('binary2strings/binary2strings')],
