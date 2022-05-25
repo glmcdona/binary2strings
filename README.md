@@ -9,7 +9,18 @@ International language string extraction is supported for both Utf8 and wide-cha
 
 Optionally uses a machine learning model to filter out erroneous junk strings.
 
-## Function parameters
+## Installation
+Recommended installation method:
+```
+pip install binary2strings
+```
+
+Alternatively, download the repo and run:
+```
+python setup.py install
+```
+
+## Documentation
 
 Api:
 ```python
