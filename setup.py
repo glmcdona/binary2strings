@@ -100,7 +100,7 @@ with open("readme.md", "r") as fh:
     long_description = fh.read()
 setup(
     name='binary2strings',
-    version='0.1.4',
+    version='0.1.5',
     author='Geoff McDonald',
     author_email='glmcdona@gmail.com',
     url='https://github.com/glmcdona/binary2strings',
