@@ -56,6 +56,7 @@ class CMakeBuild(build_ext):
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             build_args += ['--', '-j2']
+        print(cmake_args)
 
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
@@ -96,11 +97,11 @@ class CMakeBuild(build_ext):
 # Note to self to build and upload skip existing:
 #   python setup.py sdist bdist_wheel
 #   twine upload dist/* --skip-existing
-with open("readme.md", "r") as fh:
+with open("README.md", "r") as fh:
     long_description = fh.read()
 setup(
     name='binary2strings',
-    version='0.1.5',
+    version='0.1.6',
     author='Geoff McDonald',
     author_email='glmcdona@gmail.com',
     url='https://github.com/glmcdona/binary2strings',

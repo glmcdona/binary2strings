@@ -96,8 +96,13 @@ int get_language_group(wchar_t c)
 	return bmp_12bits_to_group[c >> 4]; // Leading 12 bits identify the language group
 }
 
+// Switch the definition based on platform:
+#if defined(_WIN32) || defined(_WIN64)
 // Note: Buffer overrun security checks disabled, since they added ~50% overhead.
 __declspec(safebuffers) extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars)
+#else
+extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars)
+#endif
 {
 	// Try extracting the string as either utf8 or unicode wchar format. Returns None if it's not a valid string.
 	int i;

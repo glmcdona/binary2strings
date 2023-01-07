@@ -4,6 +4,7 @@
 #include <codecvt>
 #include "string_model.h"
 #include <unordered_set>
+#include <cmath>
 
 using namespace std;
 
