@@ -5,6 +5,7 @@
 #include "string_model.h"
 #include <unordered_set>
 #include <cmath>
+#include <locale>
 
 using namespace std;
 
