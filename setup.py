@@ -68,9 +68,35 @@ class CMakeBuild(build_ext):
                               cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.'] + build_args,
                               cwd=self.build_temp)
+
+        # Print all the files in the cmake build folder
+        print("Files in build directory:")
+        for root, dirs, files in os.walk(self.build_temp):
+            for file in files:
+                print(os.path.join(root, file))
+
+        # Print all the files in the output build folder
+        print(f"CMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}")
+        print("Files in output directory:")
+        for root, dirs, files in os.walk(extdir):
+            for file in files:
+                print(os.path.join(root, file))
+        
         # Copy *_test file to tests directory
-        #test_bin = os.path.join(self.build_temp, 'binary2strings')
-        test_bin = os.path.join(self.build_temp, 'Release\\binary2strings.lib')
+        if platform.system() == "Windows":
+            test_bin = os.path.join(self.build_temp, 'Release\\binary2strings.lib')
+        else:
+            # Find the binary2strings*.so file in the output folder
+            test_bin = None
+            for root, dirs, files in os.walk(extdir):
+                for file in files:
+                    if file.startswith('binary2strings') and file.endswith('.so'):
+                        test_bin = os.path.join(root, file)
+                        break
+
+            if test_bin is None:
+                raise RuntimeError("Could not find binary2strings*.so file in output folder")
+        
         self.copy_test_file(test_bin)
         print()  # Add an empty line for cleaner output
 
