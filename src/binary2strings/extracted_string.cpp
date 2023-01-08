@@ -3,7 +3,7 @@
 
 using namespace std;
 
-std::wstring_convert<std::codecvt_utf8_utf16<char16_t>> _converter;
+std::wstring_convert<std::codecvt_utf8<char16_t>, char16_t> _conv16;
 
 extracted_string::extracted_string()
 {
@@ -27,19 +27,8 @@ extracted_string::extracted_string(const char16_t* string, size_t size_in_bytes,
 {
 	m_type = type;
 
-	// Convert to UTF8 string
-	// If Windows
-	#if defined(_WIN32) || defined(_WIN64)
-		//m_string = _converter.to_bytes((wchar_t*) string, (wchar_t*) (string + size_in_bytes / 2));
-		std::wstring_convert<std::codecvt_utf8<char16_t>, char16_t> conv16;
-		m_string = conv16.to_bytes(string, (string + size_in_bytes / 2));
-	#else
-		std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter32;
-		m_string = converter32.to_bytes((char32_t*)string, (char32_t*)string + size_in_bytes / 4);		
-	#endif
-
-	
-	//m_string = _char16_to_utf8(string, size_in_bytes);
+	// Convert two-bytes per character wide string to utf8
+	m_string = _conv16.to_bytes(string, (string + size_in_bytes / 2));
 
 	m_size_in_bytes = size_in_bytes;
 	m_offset_start = offset_start;
