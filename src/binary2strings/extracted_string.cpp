@@ -3,7 +3,7 @@
 
 using namespace std;
 
-std::wstring_convert<std::codecvt_utf8<wchar_t>> _converter;
+std::wstring_convert<std::codecvt_utf8<char16_t>, char16_t> _conv16;
 
 extracted_string::extracted_string()
 {
@@ -23,13 +23,12 @@ extracted_string::extracted_string(const char* string, size_t size_in_bytes, STR
 	m_offset_end = offset_end;
 }
 
-extracted_string::extracted_string(const wchar_t* string, size_t size_in_bytes, STRING_TYPE type, int offset_start, int offset_end)
+extracted_string::extracted_string(const char16_t* string, size_t size_in_bytes, STRING_TYPE type, int offset_start, int offset_end)
 {
 	m_type = type;
 
-	// Convert to UTF8 string
-	m_string = _converter.to_bytes(string, string + size_in_bytes / 2);
-	//m_string = _wchar_to_utf8(string, size_in_bytes);
+	// Convert two-bytes per character wide string to utf8
+	m_string = _conv16.to_bytes(string, (string + size_in_bytes / 2));
 
 	m_size_in_bytes = size_in_bytes;
 	m_offset_start = offset_start;
@@ -57,7 +56,7 @@ float extracted_string::get_proba_interesting()
 	// 	1 for the total number of > 0x128 ascii code
 	//  1 for distinct character count
 	float score = string_model::bias;
-	unordered_set<wchar_t> cc; // Character counts 
+	unordered_set<char16_t> cc; // Character counts 
 	for (size_t i = 0; i < l; i++)
 	{
 		// Count distinct characters

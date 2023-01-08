@@ -33,8 +33,8 @@ size_t try_utf8_char_step(const unsigned char* buffer, size_t buffer_size, long 
 		if ((buffer[offset + 1] & 0xC0) != 0x80)
 			return 0;
 
-		// Now convert the character to wchar_t
-		wchar_t c = 0;
+		// Now convert the character to char16_t
+		char16_t c = 0;
 		c |= (first_byte & 0x1F) << 6;
 		c |= (buffer[offset + 1] & 0x3F);
 
@@ -57,8 +57,8 @@ size_t try_utf8_char_step(const unsigned char* buffer, size_t buffer_size, long 
 		if ((buffer[offset + 2] & 0xC0) != 0x80)
 			return 0;
 
-		// Now convert the character to wchar_t
-		wchar_t c = 0;
+		// Now convert the character to char16_t
+		char16_t c = 0;
 		c |= (first_byte & 0x0F) << 12;
 		c |= (buffer[offset + 1] & 0x3F) << 6;
 		c |= (buffer[offset + 2] & 0x3F);
@@ -89,15 +89,20 @@ size_t try_utf8_char_step(const unsigned char* buffer, size_t buffer_size, long 
 	return 0;
 }
 
-int get_language_group(wchar_t c)
+int get_language_group(char16_t c)
 {
 	// Returns the language group of a unicode wchar.
 	// Return value of 0x0 denotes an invalid language group, and 0x1 denotes Latin.
-	return bmp_12bits_to_group[c >> 4]; // Leading 12 bits identify the language group
+	return bmp_12bits_to_group[(c >> 4) & 0xfff]; // Leading 12 bits identify the language group
 }
 
+// Switch the definition based on platform:
+#if defined(_WIN32) || defined(_WIN64)
 // Note: Buffer overrun security checks disabled, since they added ~50% overhead.
 __declspec(safebuffers) extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars)
+#else
+extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars)
+#endif
 {
 	// Try extracting the string as either utf8 or unicode wchar format. Returns None if it's not a valid string.
 	int i;
@@ -141,7 +146,7 @@ __declspec(safebuffers) extracted_string* try_extract_string(const unsigned char
 	// Parse as unicode
 	while (i + 1 < buffer_size)
 	{
-		wchar_t c = *(wchar_t*)(buffer + i);
+		char16_t c = *(char16_t*)(buffer + i);
 
 		if (c == 0)
 			break;
@@ -180,7 +185,7 @@ __declspec(safebuffers) extracted_string* try_extract_string(const unsigned char
 	if (char_count >= min_chars)
 	{
 		// Return the extracted string
-		return new extracted_string((wchar_t*)(buffer + offset), i - offset, TYPE_WIDE_STRING, offset, i - 2);
+		return new extracted_string((char16_t*)(buffer + offset), i - offset, TYPE_WIDE_STRING, offset, i - 2);
 	}
 
 	return NULL; // Invalid string at this offset
