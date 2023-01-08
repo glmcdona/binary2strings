@@ -24,7 +24,7 @@ python setup.py install
 
 Api:
 ```python
-from binary2strings import binary2strings as b2s
+import binary2strings as b2s
 
 [(string, encoding, span, is_interesting),] =
     b2s.extract_all_strings(buffer, min_chars=4, only_interesting=False)
@@ -48,7 +48,7 @@ Returns an array of tuples ordered according to the order in which they are loca
 
 Example usage:
 ```python
-from binary2strings import binary2strings as b2s
+import binary2strings as b2s
 
 data = b"hello world\x00\x00a\x00b\x00c\x00d\x00\x00"
 result = b2s.extract_all_strings(data, min_chars=4)
@@ -61,7 +61,7 @@ print(result)
 
 It also supports international languages, eg:
 ```python
-from binary2strings import binary2strings as b2s
+import binary2strings as b2s
 
 # "hello world" in Chinese simplified
 string = "\x00世界您好\x00"
@@ -76,7 +76,7 @@ print(result)
 
 Example extracting all strings from a binary file:
 ```python
-from binary2strings import binary2strings as b2s
+import binary2strings as b2s
 
 with open("C:\\Windows\\System32\\cmd.exe", "rb") as i:
     data = i.read()
@@ -87,7 +87,7 @@ with open("C:\\Windows\\System32\\cmd.exe", "rb") as i:
 
 Example extracting only interesting strings from a binary file:
 ```python
-from binary2strings import binary2strings as b2s
+import binary2strings as b2s
 
 with open("C:\\Windows\\System32\\cmd.exe", "rb") as i:
     data = i.read()

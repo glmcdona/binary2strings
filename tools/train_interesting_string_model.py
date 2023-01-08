@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
     # Export the bias and weights to a model.h file for use in C++
     print("Exporting model to model.h...")
-    with open("string_model.h", "w") as f:
+    with open("string_model.hpp", "w") as f:
         f.write("#pragma once\n\n")
         f.write("namespace string_model {\n\n")
         f.write(f"\tconstexpr float bias = {model.intercept_[0]};\n")
