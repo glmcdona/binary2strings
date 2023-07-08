@@ -63,12 +63,12 @@ static std::unordered_set<char16_t> is_seen_commoncrawl({
 	}
 );
 
-size_t try_utf8_char_step(const unsigned char* buffer, size_t buffer_size, long offset);
+size_t try_utf8_char_step(const unsigned char* buffer, size_t buffer_size, size_t offset);
 
 int get_language_group(char16_t c);
 
-extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars);
+extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_size, size_t offset, size_t min_chars);
 
-std::tuple<string, string, std::pair<int, int>, bool> try_extract_string_tuple(const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars, bool only_interesting);
+std::tuple<string, string, std::pair<size_t, size_t>, bool> try_extract_string_tuple(const unsigned char* buffer, size_t buffer_size, size_t offset, size_t min_chars, bool only_interesting);
 
-vector<std::tuple<string, string, std::pair<int, int>, bool>> extract_all_strings(const unsigned char buffer[], size_t buffer_size, size_t min_chars, bool only_interesting);
+vector<std::tuple<string, string, std::pair<size_t, size_t>, bool>> extract_all_strings(const unsigned char buffer[], size_t buffer_size, size_t min_chars, bool only_interesting);

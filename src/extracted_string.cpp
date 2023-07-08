@@ -3,18 +3,19 @@
 
 using namespace std;
 
+#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 std::wstring_convert<std::codecvt_utf8<char16_t>, char16_t> _conv16;
 
 extracted_string::extracted_string()
 {
 	m_type = TYPE_UNDETERMINED;
-	m_string = (std::string)NULL;
+	m_string = "";
 	m_size_in_bytes = 0;
 	m_offset_start = 0;
 	m_offset_end = 0;
 }
 
-extracted_string::extracted_string(const char* string, size_t size_in_bytes, STRING_TYPE type, int offset_start, int offset_end)
+extracted_string::extracted_string(const char* string, size_t size_in_bytes, STRING_TYPE type, size_t offset_start, size_t offset_end)
 {
 	m_type = type;
 	m_string = std::string(string, size_in_bytes);
@@ -23,7 +24,7 @@ extracted_string::extracted_string(const char* string, size_t size_in_bytes, STR
 	m_offset_end = offset_end;
 }
 
-extracted_string::extracted_string(const char16_t* string, size_t size_in_bytes, STRING_TYPE type, int offset_start, int offset_end)
+extracted_string::extracted_string(const char16_t* string, size_t size_in_bytes, STRING_TYPE type, size_t offset_start, size_t offset_end)
 {
 	m_type = type;
 
@@ -126,12 +127,12 @@ string extracted_string::get_type_string()
 	}
 }
 
-int extracted_string::get_offset_start()
+size_t extracted_string::get_offset_start()
 {
 	return m_offset_start;
 }
 
-int extracted_string::get_offset_end()
+size_t extracted_string::get_offset_end()
 {
 	return m_offset_end;
 }

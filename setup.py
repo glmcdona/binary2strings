@@ -8,12 +8,11 @@ from pybind11 import get_cmake_dir
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup, Extension, find_packages
 
-__version__ = "0.1.7"
+__version__ = "0.1.8"
 
 ext_modules = [
     Pybind11Extension("binary2strings",
         sorted(glob("src/*.cpp")),  # Sort source files for reproducibility
-        headers = sorted(glob("src/*.hpp")),
         define_macros = [('VERSION_INFO', __version__)],
         include_dirs = ["src"],
         ),
