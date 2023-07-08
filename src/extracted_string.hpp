@@ -1,6 +1,7 @@
 // Class for extracted strings
 #pragma once
 #include <string>
+#define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
 #include <codecvt>
 #include "string_model.hpp"
 #include <unordered_set>
@@ -24,21 +25,21 @@ private:
 	STRING_TYPE m_type;
 	std::string m_string; // Supports Utf8
 	size_t m_size_in_bytes;
-	int m_offset_start;
-	int m_offset_end;
+	size_t m_offset_start;
+	size_t m_offset_end;
 
 public:
 	extracted_string();
-	extracted_string(const char* string, size_t size_in_bytes, STRING_TYPE type, int offset_start, int offset_end);
-	extracted_string(const char16_t* string, size_t size_in_bytes, STRING_TYPE type, int offset_start, int offset_end);
+	extracted_string(const char* string, size_t size_in_bytes, STRING_TYPE type, size_t offset_start, size_t offset_end);
+	extracted_string(const char16_t* string, size_t size_in_bytes, STRING_TYPE type, size_t offset_start, size_t offset_end);
 
 	float get_proba_interesting();
 	size_t get_size_in_bytes();
 	string get_string();
 	STRING_TYPE get_type();
 	string get_type_string();
-	int get_offset_start();
-	int get_offset_end();
+	size_t get_offset_start();
+	size_t get_offset_end();
 
 	bool is_interesting();
 

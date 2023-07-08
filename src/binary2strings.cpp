@@ -2,7 +2,7 @@
 
 using namespace std;
 
-size_t try_utf8_char_step(const unsigned char* buffer, size_t buffer_size, long offset)
+size_t try_utf8_char_step(const unsigned char* buffer, size_t buffer_size, size_t offset)
 {
 	// Returns 0 if it's not likely a valid utf8 character. For ascii range of characters it requires
 	// the character to be a displayable character.
@@ -99,14 +99,14 @@ int get_language_group(char16_t c)
 // Switch the definition based on platform:
 #if defined(_WIN32) || defined(_WIN64)
 // Note: Buffer overrun security checks disabled, since they added ~50% overhead.
-__declspec(safebuffers) extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars)
+__declspec(safebuffers) extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_size, size_t offset, size_t min_chars)
 #else
-extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars)
+extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_size, size_t offset, size_t min_chars)
 #endif
 {
 	// Try extracting the string as either utf8 or unicode wchar format. Returns None if it's not a valid string.
-	int i;
-	int char_count;
+	size_t i;
+	size_t char_count;
 
 	// Try to parse as utf8 first
 	size_t utf_char_len;
@@ -192,7 +192,7 @@ extracted_string* try_extract_string(const unsigned char* buffer, size_t buffer_
 }
 
 
-std::tuple<string, string, std::pair<int, int>, bool> try_extract_string_tuple(const unsigned char* buffer, size_t buffer_size, long offset, size_t min_chars, bool only_interesting)
+std::tuple<string, string, std::pair<size_t, size_t>, bool> try_extract_string_tuple(const unsigned char* buffer, size_t buffer_size, size_t offset, size_t min_chars, bool only_interesting)
 {
 	// Simple wrapper to return a tuple instead
 	extracted_string* s = try_extract_string(buffer, buffer_size, offset, min_chars);
@@ -206,7 +206,7 @@ std::tuple<string, string, std::pair<int, int>, bool> try_extract_string_tuple(c
 			auto result = std::make_tuple(
 				s->get_string(),
 				s->get_type_string(),
-				std::pair<int, int>(s->get_offset_start(), s->get_offset_end()),
+				std::pair<size_t, size_t>(s->get_offset_start(), s->get_offset_end()),
 				is_interesting
 			);
 
@@ -220,11 +220,11 @@ std::tuple<string, string, std::pair<int, int>, bool> try_extract_string_tuple(c
 }
 
 
-vector<std::tuple<string, string, std::pair<int, int>, bool>> extract_all_strings(const unsigned char buffer[], size_t buffer_size, size_t min_chars, bool only_interesting)
+vector<std::tuple<string, string, std::pair<size_t, size_t>, bool>> extract_all_strings(const unsigned char buffer[], size_t buffer_size, size_t min_chars, bool only_interesting)
 {
 	// Process the specified binary buffer and extract all strings
-	long offset = 0;
-	vector<std::tuple<string, string, std::pair<int, int>, bool>> r_vect;
+	size_t offset = 0;
+	vector<std::tuple<string, string, std::pair<size_t, size_t>, bool>> r_vect;
 	vector<float> proba_interesting_vect;
 	vector<float> proba_interesting_avg_vect;
 	extracted_string* s;
@@ -242,10 +242,10 @@ vector<std::tuple<string, string, std::pair<int, int>, bool>> extract_all_string
 
 			// Add the new string
 			r_vect.push_back(
-				tuple<string, string, std::pair<int, int>, bool>(
+				tuple<string, string, std::pair<size_t, size_t>, bool>(
 					s->get_string(),
 					s->get_type_string(),
-					std::pair<int, int>(s->get_offset_start(), s->get_offset_end()),
+					std::pair<size_t, size_t>(s->get_offset_start(), s->get_offset_end()),
 					proba_interesting > 0.5
 					)
 			);
@@ -268,7 +268,7 @@ vector<std::tuple<string, string, std::pair<int, int>, bool>> extract_all_string
 			proba_interesting_vect.push_back(proba_interesting);
 
 			// Advance by the byte-length of the string
-			offset += (long)s->get_size_in_bytes();
+			offset += s->get_size_in_bytes();
 
 			// Cleanup
 			delete s;
@@ -280,7 +280,7 @@ vector<std::tuple<string, string, std::pair<int, int>, bool>> extract_all_string
 	}
 
 	// Have a pass through the strings averaging the interestingness and filtering
-	vector<std::tuple<string, string, std::pair<int, int>, bool>> r_vect_filt;
+	vector<std::tuple<string, string, std::pair<size_t, size_t>, bool>> r_vect_filt;
 	for (int i = 0; i < r_vect.size(); i++)
 	{
 		// Get the interestingness
@@ -298,7 +298,7 @@ vector<std::tuple<string, string, std::pair<int, int>, bool>> extract_all_string
 		if (!only_interesting || proba_interesting_avg >= 0.2 || proba_interesting_vect[i] >= 0.5)
 		{
 			r_vect_filt.push_back(
-				tuple<string, string, std::pair<int, int>, bool>(
+				tuple<string, string, std::pair<size_t, size_t>, bool>(
 					std::get<0>(r_vect[i]),
 					std::get<1>(r_vect[i]),
 					std::get<2>(r_vect[i]),
