@@ -14,6 +14,9 @@ PYBIND11_MODULE(binary2strings, m)
 
         if(info.ndim != 1)
             throw std::runtime_error("Only 1-dimensional arrays are supported");
+        
+        if(min_chars < 1)
+            throw std::runtime_error("min_chars must be 1 or larger");
 
         const unsigned char *data = reinterpret_cast<const unsigned char *>(info.ptr);
         
@@ -28,6 +31,9 @@ PYBIND11_MODULE(binary2strings, m)
 
         if(info.ndim != 1)
             throw std::runtime_error("Only 1-dimensional arrays are supported");
+        
+        if(min_chars < 1)
+            throw std::runtime_error("min_chars must be 1 or larger");
 
         const unsigned char *data = reinterpret_cast<const unsigned char *>(info.ptr);
         return try_extract_string_tuple(data, info.shape[0], 0, min_chars, only_interesting);

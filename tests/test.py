@@ -1,6 +1,8 @@
 import unittest
 # import our `pybind11`-based extension module
 import binary2strings
+import os
+import sys
 
 class MainTest(unittest.TestCase):
     def test_extract_all_ascii_unicode(self):
@@ -128,6 +130,110 @@ class MainTest(unittest.TestCase):
         for i in range(len(interesting_strings)):
             self.assertEqual(result[i][0], interesting_strings[i])
             self.assertEqual(result[i][3], True)
+
+    def test_min_chars(self):
+        for min_chars in range(2,10):
+            for test_string in ["a"*5, "한"*5]:
+                for encoding in ["utf-8", "utf-16"]:
+                    data = bytes(test_string, encoding)
+                    
+                    # Strip the BOM if present
+                    if encoding == "utf-16":
+                        data = data[2:]
+
+                    description = f"min_chars={min_chars}, test_string={test_string}, encoding={encoding}, hex={data.hex()}"
+
+                    # Test extraction of single strings
+                    result = binary2strings.extract_all_strings(data, min_chars=min_chars)
+                    if min_chars <= 5:
+                        self.assertEqual(result[0][0], test_string, description)
+                    else:
+                        self.assertEqual(len(result), 0, description)
+
+                    # Same test for extract_string
+                    result = binary2strings.extract_string(data, min_chars=min_chars)
+                    if min_chars <= 5:
+                        self.assertEqual(result[0], test_string, description)
+                    else:
+                        self.assertEqual(result[0], "", description)
+    
+    def test_corner_cases(self):
+        string = b"0000000000"
+        result = binary2strings.extract_all_strings(string)
+        self.assertEqual(len(result), 1, f"result={result}")
+
+        for min_chars in [1,2,10,1000]:
+            # String of nulls
+            string = b"\x00\x00\x00\x00\x00"
+            result = binary2strings.extract_all_strings(string, min_chars=min_chars)
+            self.assertEqual(len(result), 0, f"min_chars={min_chars}, result={result}")
+            result = binary2strings.extract_string(string, min_chars=min_chars)
+            self.assertEqual(len(result[0]), 0, f"min_chars={min_chars}, result={result}")
+
+            string = b"\x00"
+            result = binary2strings.extract_all_strings(string, min_chars=min_chars)
+            self.assertEqual(len(result), 0, f"min_chars={min_chars}, result={result}")
+            result = binary2strings.extract_string(string, min_chars=min_chars)
+            self.assertEqual(len(result[0]), 0, f"min_chars={min_chars}, result={result}")
+
+            # Empty string
+            string = b""
+            result = binary2strings.extract_all_strings(string, min_chars=min_chars)
+            self.assertEqual(len(result), 0, f"min_chars={min_chars}, result={result}")
+            result = binary2strings.extract_string(string, min_chars=min_chars)
+            self.assertEqual(len(result[0]), 0, f"min_chars={min_chars}, result={result}")
+
+            # Short string
+            string = b"aa"
+            result = binary2strings.extract_all_strings(string, min_chars=min_chars)
+            if min_chars <= 2:
+                self.assertEqual(len(result), 1, f"min_chars={min_chars}, result={result}")
+            else:
+                self.assertEqual(len(result), 0, f"min_chars={min_chars}, result={result}")
+            
+            # Single character test
+            for string in ['a', "한"]:
+                for encoding in ["utf-8", "utf-16"]:
+                    data = bytes(string, encoding)
+                    result = binary2strings.extract_all_strings(data, min_chars=min_chars)
+                    if min_chars <= 1:
+                        self.assertEqual(len(result), 1, f"min_chars={min_chars}, result={result}")
+                    else:
+                        self.assertEqual(len(result), 0, f"min_chars={min_chars}, result={result}")
+                    
+                    # Strip the BOM if present
+                    if encoding == "utf-16":
+                        data = data[2:]
+                    
+                    result = binary2strings.extract_string(data, min_chars=min_chars)
+                    if min_chars <= 1:
+                        self.assertEqual(len(result[0]), 1, f"min_chars={min_chars}, result={result}")
+                    else:
+                        self.assertEqual(len(result[0]), 0, f"min_chars={min_chars}, result={result}")
+
+    @unittest.skipIf(sys.platform != "win32", "requires Windows")
+    def test_bulk_files(self):
+        # Extract strings from exe's in %windir% to test for crashes
+        N_FILES = 200 # Number of exe's to extract strings from for testing
+        n_files = 0
+        n_strings = 0
+        for root, dirs, files in os.walk(os.environ["windir"]):
+            for file in files:
+                if file.endswith(".exe"):
+                    path = os.path.join(root, file)
+                    with open(path, "rb") as f:
+                        data = f.read()
+                    result = binary2strings.extract_all_strings(data)
+                    self.assertGreater(len(result), 0, path)
+
+                    n_files += 1
+                    n_strings += len(result)
+                    if n_files >= N_FILES:
+                        # Actual value locally: 1,583,765
+                        self.assertGreater(n_strings, 800000, "Not enough strings extracted")
+                        return
+        
+        self.assertEqual(True, False, "Not enough files tested")
 
 
 
