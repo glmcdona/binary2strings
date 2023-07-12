@@ -214,26 +214,35 @@ class MainTest(unittest.TestCase):
     @unittest.skipIf(sys.platform != "win32", "requires Windows")
     def test_bulk_files(self):
         # Extract strings from exe's in %windir% to test for crashes
-        N_FILES = 200 # Number of exe's to extract strings from for testing
-        n_files = 0
-        n_strings = 0
-        for root, dirs, files in os.walk(os.environ["windir"]):
-            for file in files:
-                if file.endswith(".exe"):
-                    path = os.path.join(root, file)
-                    with open(path, "rb") as f:
-                        data = f.read()
-                    result = binary2strings.extract_all_strings(data)
-                    self.assertGreater(len(result), 0, path)
+        for only_interesting in [True, False]:
+            N_FILES = 200 # Number of exe's to extract strings from for testing
+            n_files = 0
+            n_strings = 0
+            for root, dirs, files in os.walk(os.environ["windir"]):
+                for file in files:
+                    if file.endswith(".exe"):
+                        path = os.path.join(root, file)
+                        with open(path, "rb") as f:
+                            data = f.read()
+                        result = binary2strings.extract_all_strings(data, only_interesting=only_interesting)
+                        self.assertGreater(len(result), 0, path)
 
-                    n_files += 1
-                    n_strings += len(result)
-                    if n_files >= N_FILES:
-                        # Actual value locally: 1,583,765
-                        self.assertGreater(n_strings, 800000, "Not enough strings extracted")
-                        return
-        
-        self.assertEqual(True, False, "Not enough files tested")
+                        n_files += 1
+                        n_strings += len(result)
+                        if n_files >= N_FILES:
+                            break
+                if n_files >= N_FILES:
+                    break
+            
+            if n_files < N_FILES:
+                self.assertEqual(True, False, "Not enough files tested")
+            
+            if only_interesting:
+                # Actual value locally: 322,145
+                self.assertGreater(n_strings, 150000, "Not enough strings extracted")
+            else:
+                # Actual value locally: 1,583,765
+                self.assertGreater(n_strings, 1000000, "Not enough strings extracted")
 
 
 
