@@ -26,8 +26,9 @@ ext_modules = [
 #     Use username __token__
 #     Use password from token
 #     Delete token after use
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+#with open("README.md", "r") as fh:
+#    long_description = fh.read()
+long_description = "Fast string extraction from binary buffers."
 setup(
     name='binary2strings',
     version=__version__,
